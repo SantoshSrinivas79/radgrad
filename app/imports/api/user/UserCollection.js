@@ -49,9 +49,14 @@ class UserCollection {
         const userWithoutHost = username.split('@')[0];
         const result = { id: userWithoutHost };
         const options = { profile: { name: userWithoutHost } };
-        const casReturn = Accounts.updateOrCreateUserFromExternalService('cas', result, options);
-        const userID = casReturn.userId;
-        Meteor.users.update(userID, { $set: { username } });
+        // const casReturn = Accounts.updateOrCreateUserFromExternalService('cas', result, options);
+        // const userID = casReturn.userId;
+        // Meteor.users.update(userID, { $set: { username } });
+
+        const password = this._generateRandomPassword();
+        console.log(`Defining user ${username} with password ${password}`);
+        const userID = Accounts.createUser({ username, email: username, password });
+
         // Meteor.users.find().fetch().map(user => console.log('  ', JSON.stringify(user)));
         Roles.addUsersToRoles(userID, [role]);
         return userID;

@@ -11,8 +11,21 @@ Template.Meteor_Login_Form.events({
     Meteor.loginWithPassword(username, password, (error) => {
       if (error) {
         console.log('error during login');
+        console.log(error);
       } else {
         $('.ui.modal').modal('hide');
+        const username = Meteor.user('username').username;
+        const id = Meteor.userId();
+        let role = Roles.getRolesForUser(id)[0];
+        const studentp = role.toLowerCase() === 'student';
+        if (studentp) {
+          const profile = Users.findProfileFromUsername(username);
+          if (profile.isAlumni) {
+            role = 'Alumni';
+          }
+        }
+        FlowRouter.go(`/${role.toLowerCase()}/${username}/home`);
+        
       }
     });
   },
