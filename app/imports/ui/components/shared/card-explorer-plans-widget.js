@@ -1,5 +1,4 @@
 import { Template } from 'meteor/templating';
-import { FlowRouter } from 'meteor/kadira:flow-router';
 import { _ } from 'meteor/erasaur:meteor-lodash';
 
 import { AcademicPlans } from '../../../api/degree-plan/AcademicPlanCollection';
@@ -8,6 +7,7 @@ import { Semesters } from '../../../api/semester/SemesterCollection';
 import { Users } from '../../../api/user/UserCollection';
 import { FavoriteAcademicPlans } from '../../../api/favorite/FavoriteAcademicPlanCollection';
 import { getUserIdFromRoute } from './get-user-id-from-route';
+import { getGroupName } from './route-group-name';
 
 /* global window */
 
@@ -41,18 +41,12 @@ function availableAcademicPlans() {
 }
 
 Template.Card_Explorer_Plans_Widget.helpers({
-  canAdd() {
-    window.camDebugging.start('CardPlan.canAdd');
-    const group = FlowRouter.current().route.group.name;
-    window.camDebugging.stop('CardPlan.canAdd');
-    return group === 'student';
-  },
   itemCount() {
     return availableAcademicPlans().length;
   },
   noPlan() {
     window.camDebugging.start('CardPlan.noPlan');
-    const group = FlowRouter.current().route.group.name;
+    const group = getGroupName();
     if (group === 'student') {
       const studentID = getUserIdFromRoute();
       const favorites = FavoriteAcademicPlans.findNonRetired({ studentID });

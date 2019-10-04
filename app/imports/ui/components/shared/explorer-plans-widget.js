@@ -1,4 +1,3 @@
-import { FlowRouter } from 'meteor/kadira:flow-router';
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { _ } from 'meteor/erasaur:meteor-lodash';
@@ -13,6 +12,7 @@ import { isInRole } from '../../utilities/template-helpers';
 import { defaultProfilePicture } from '../../../api/user/BaseProfileCollection';
 import { FavoriteAcademicPlans } from '../../../api/favorite/FavoriteAcademicPlanCollection';
 import { Slugs } from '../../../api/slug/SlugCollection';
+import { getGroupName } from './route-group-name';
 
 Template.Explorer_Plans_Widget.onCreated(function studentExplorerPlansWidgetOnCreated() {
   this.planVar = new ReactiveVar();
@@ -38,20 +38,22 @@ Template.Explorer_Plans_Widget.helpers({
     return defaultProfilePicture;
   },
   usersRouteName() {
-    const group = FlowRouter.current().route.group.name;
+    const group = getGroupName();
     if (group === 'student') {
       return RouteNames.studentCardExplorerUsersPageRouteName;
-    } else
-    if (group === 'faculty') {
+    } else if (group === 'faculty') {
       return RouteNames.facultyCardExplorerUsersPageRouteName;
     }
     return RouteNames.mentorCardExplorerUsersPageRouteName;
   },
   userStatus(plan) {
-    const profile = Users.getProfile(getRouteUserName());
-    const plans = _.map(FavoriteAcademicPlans.find({ studentID: profile.userID }).fetch(),
-      (p) => AcademicPlans.findDoc(p.academicPlanID)._id);
-    return _.includes(plans, plan._id);
+    if (getRouteUserName()) {
+      const profile = Users.getProfile(getRouteUserName());
+      const plans = _.map(FavoriteAcademicPlans.find({ studentID: profile.userID }).fetch(),
+        (p) => AcademicPlans.findDoc(p.academicPlanID)._id);
+      return _.includes(plans, plan._id);
+    }
+    return false;
   },
   userUsername(user) {
     if (getUserIdFromRoute() !== user._id) {
@@ -60,14 +62,17 @@ Template.Explorer_Plans_Widget.helpers({
     return '';
   },
   plans() {
-    const profile = Users.getProfile(getRouteUserName());
-    let semesterNumber;
-    if (profile.academicPlanID) {
-      semesterNumber = AcademicPlans.findDoc(profile.academicPlanID).semesterNumber;
+    if (getRouteUserName()) {
+      const profile = Users.getProfile(getRouteUserName());
+      let semesterNumber;
+      if (profile.academicPlanID) {
+        semesterNumber = AcademicPlans.findDoc(profile.academicPlanID).semesterNumber;
+      }
+      const degree = DesiredDegrees.findDoc({ name: Template.instance().data.name });
+      const plans = AcademicPlans.getPlansForDegree(degree._id, semesterNumber);
+      return plans;
     }
-    const degree = DesiredDegrees.findDoc({ name: Template.instance().data.name });
-    const plans = AcademicPlans.getPlansForDegree(degree._id, semesterNumber);
-    return plans;
+    return [];
   },
   planVar() {
     return Template.instance().planVar;
@@ -76,9 +81,11 @@ Template.Explorer_Plans_Widget.helpers({
     return Template.instance().data.item;
   },
   selectedPlan() {
-    const profile = Users.getProfile(getRouteUserName());
-    if (profile.academicPlanID) {
-      return AcademicPlans.findDoc(profile.academicPlanID).name;
+    if (getRouteUserName()) {
+      const profile = Users.getProfile(getRouteUserName());
+      if (profile.academicPlanID) {
+        return AcademicPlans.findDoc(profile.academicPlanID).name;
+      }
     }
     return '';
   },
@@ -111,5 +118,7 @@ Template.Explorer_Plans_Widget.events({
 });
 
 Template.Explorer_Plans_Widget.onRendered(function studentExplorerPlansWidgetOnRendered() {
-  Template.instance().planVar.set(Template.instance().data.item);
+  Template.instance()
+    .planVar
+    .set(Template.instance().data.item);
 });
